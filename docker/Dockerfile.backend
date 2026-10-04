@@ -1,0 +1,31 @@
+# ==============================================================================
+# Multi-stage Dockerfile for Spring Boot 3 Backend
+# ==============================================================================
+
+# Stage 1: Build JAR with Maven & OpenJDK 21
+FROM eclipse-temurin:21-jdk-alpine AS builder
+WORKDIR /workspace
+
+# Cache Maven dependencies layer
+COPY .mvn/ .mvn/
+COPY mvnw pom.xml ./
+RUN ./mvnw dependency:go-offline -B || true
+
+# Copy source and build
+COPY src/ src/
+RUN ./mvnw clean package -DskipTests -B
+
+# Stage 2: Minimal Distroless / JRE Runtime
+FROM eclipse-temurin:21-jre-alpine
+WORKDIR /app
+
+# Non-root user for security
+RUN addgroup -S studyforge && adduser -S studyforge -G studyforge
+USER studyforge:studyforge
+
+COPY --from=builder /workspace/target/*.jar app.jar
+
+ENV SERVER_PORT=8080
+EXPOSE 8080
+
+ENTRYPOINT ["java", "-jar", "app.jar"]

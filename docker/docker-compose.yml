@@ -1,0 +1,104 @@
+version: '3.8'
+
+services:
+  # ----------------------------------------------------------------------------
+  # PostgreSQL 16 with pgvector extension
+  # ----------------------------------------------------------------------------
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: studyforge-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-studyforge}
+      POSTGRES_USER: ${POSTGRES_USER:-studyforge_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-studyforge_password}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-studyforge_user} -d ${POSTGRES_DB:-studyforge}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - studyforge-network
+
+  # ----------------------------------------------------------------------------
+  # Python FastAPI AI Microservice
+  # ----------------------------------------------------------------------------
+  ai-service:
+    build:
+      context: ../ai-service
+      dockerfile: ../docker/Dockerfile.ai-service
+    container_name: studyforge-ai-service
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-studyforge_user}:${POSTGRES_PASSWORD:-studyforge_password}@postgres:5432/${POSTGRES_DB:-studyforge}
+      INTERNAL_SERVICE_KEY: ${INTERNAL_SERVICE_KEY:-studyforge_internal_dev_secret_key_change_in_production}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      GEMINI_LLM_MODEL: ${GEMINI_LLM_MODEL:-gemini-3.8-flash}
+      GEMINI_EMBEDDING_MODEL: ${GEMINI_EMBEDDING_MODEL:-gemini-embedding-2}
+      EMBEDDING_DIMENSION: ${EMBEDDING_DIMENSION:-768}
+    ports:
+      - "${AI_SERVICE_PORT:-8000}:8000"
+    volumes:
+      - uploads_data:/app/uploads
+    networks:
+      - studyforge-network
+
+  # ----------------------------------------------------------------------------
+  # Spring Boot 3 Core Backend
+  # ----------------------------------------------------------------------------
+  backend:
+    build:
+      context: ../backend
+      dockerfile: ../docker/Dockerfile.backend
+    container_name: studyforge-backend
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      ai-service:
+        condition: service_started
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-studyforge}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-studyforge_user}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-studyforge_password}
+      AI_SERVICE_URL: http://ai-service:8000
+      INTERNAL_SERVICE_KEY: ${INTERNAL_SERVICE_KEY:-studyforge_internal_dev_secret_key_change_in_production}
+      JWT_SECRET: ${JWT_SECRET:-404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970}
+      STORAGE_LOCAL_DIRECTORY: /app/uploads
+    ports:
+      - "${SERVER_PORT:-8080}:8080"
+    volumes:
+      - uploads_data:/app/uploads
+    networks:
+      - studyforge-network
+
+  # ----------------------------------------------------------------------------
+  # React + TypeScript Frontend
+  # ----------------------------------------------------------------------------
+  frontend:
+    build:
+      context: ../frontend
+      dockerfile: ../docker/Dockerfile.frontend
+    container_name: studyforge-frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "${VITE_PORT:-5173}:80"
+    networks:
+      - studyforge-network
+
+networks:
+  studyforge-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  uploads_data:

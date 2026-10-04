@@ -1,0 +1,25 @@
+#!/bin/sh
+# ----------------------------------------------------------------------------
+# Maven Wrapper Unix Script
+# ----------------------------------------------------------------------------
+set -e
+
+WRAPPER_PROPERTIES="$(dirname "$0")/.mvn/wrapper/maven-wrapper.properties"
+MAVEN_VERSION="3.9.9"
+MAVEN_HOME="$HOME/.m2/wrapper/dists/apache-maven-$MAVEN_VERSION"
+
+if [ ! -d "$MAVEN_HOME" ]; then
+    echo "Downloading Maven $MAVEN_VERSION..."
+    mkdir -p "$HOME/.m2/wrapper/dists"
+    TMP_ZIP="/tmp/apache-maven-$MAVEN_VERSION-bin.zip"
+    curl -fsSL "https://repo.maven.apache.org/maven2/org/apache/maven/apache-maven/$MAVEN_VERSION/apache-maven-$MAVEN_VERSION-bin.zip" -o "$TMP_ZIP"
+    unzip -q "$TMP_ZIP" -d "$HOME/.m2/wrapper/dists"
+    rm -f "$TMP_ZIP"
+fi
+
+MVN_BIN="$MAVEN_HOME/bin/mvn"
+if [ ! -x "$MVN_BIN" ]; then
+    MVN_BIN="$(find "$HOME/.m2/wrapper/dists" -name mvn -type f -perm +111 2>/dev/null | head -n 1)"
+fi
+
+exec "$MVN_BIN" "$@"

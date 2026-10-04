@@ -1,0 +1,76 @@
+# Environment variables & secrets (CRITICAL: Never commit secrets)
+.env
+.env.*
+!.env.example
+*.key
+*.pem
+*.p12
+
+# Operating System files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE & Editor files
+.idea/
+.vscode/
+*.iml
+*.iws
+*.ipr
+*.sublime-project
+*.sublime-workspace
+.project
+.classpath
+.settings/
+
+# Spring Boot & Java (Maven)
+backend/target/
+backend/.mvn/wrapper/maven-wrapper.jar
+*.class
+*.jar
+*.war
+*.ear
+*.log
+hs_err_pid*
+replay_pid*
+
+# Node.js & React Frontend
+frontend/node_modules/
+frontend/dist/
+frontend/dist-ssr/
+frontend/.vite/
+frontend/coverage/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Python & FastAPI
+ai-service/__pycache__/
+ai-service/*/__pycache__/
+ai-service/*/*/__pycache__/
+ai-service/*/*/*/__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+ai-service/env/
+ai-service/venv/
+ai-service/.venv/
+ENV/
+env/
+venv/
+.venv/
+ai-service/.pytest_cache/
+ai-service/.ruff_cache/
+.coverage
+htmlcov/
+
+# Local document storage
+uploads/
+backend/uploads/
+ai-service/uploads/
+storage/
+
+# Docker local data volumes
+docker/data/
